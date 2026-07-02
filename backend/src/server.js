@@ -17,7 +17,7 @@ import { connectDB } from "./config/db.js";
 // import { errorHandler } from "./middleware/errorHandler.js";
 
 // Routes (will be added one by one)
-// import authRoutes from "./routes/auth.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 // import userRoutes from "./routes/user.routes.js";
 // import videoRoutes from "./routes/video.routes.js";
 // import channelRoutes from "./routes/channel.routes.js";
@@ -40,7 +40,7 @@ app.use(morgan("dev"));
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // API routes
-// app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 // app.use("/api/users", userRoutes);
 // app.use("/api/videos", videoRoutes);
 // app.use("/api/channels", channelRoutes);
