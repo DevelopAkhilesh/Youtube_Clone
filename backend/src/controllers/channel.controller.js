@@ -1,5 +1,6 @@
 import Channel from "../models/Channel.model.js";
 import User from "../models/User.model.js";
+import Video from "../models/Video.model.js";
 
 // -----------------------------------------------------------------
 // @desc    Create a channel (one per user)
@@ -69,7 +70,7 @@ export const getChannelById = async (req, res, next) => {
       return res.status(404).json({ message: "Channel not found" });
     }
 
-    res.json(channel);
+    res.status(200).json({channel});
   } catch (error) {
     next(error);
   }
@@ -115,7 +116,7 @@ export const updateChannel = async (req, res, next) => {
 
     await channel.save();
 
-    res.json({
+    res.status(200).json({
       message: "Channel updated successfully",
       channel,
     });
