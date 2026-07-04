@@ -74,6 +74,23 @@ export const createVideo = async (req, res, next) => {
     const { title, description, thumbnailUrl, videoUrl, category, isShort } = req.body;
     const userId = req.user._id;
 
+    // --- Explicit validation ---
+    const missingFields = [];
+    if (!title) missingFields.push("title");
+    if (!thumbnailUrl) missingFields.push("thumbnailUrl");
+    if (!videoUrl) missingFields.push("videoUrl");
+    if (!category) missingFields.push("category");
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: `Missing required fields: ${missingFields.join(", ")}`,
+      });
+    }
+
+    // Optional: trim title and description
+    const trimmedTitle = title.trim();
+    const trimmedDescription = description ? description.trim() : "";
+
     // Find the user's channel
     const channel = await Channel.findOne({ owner: userId });
     if (!channel) {
@@ -88,8 +105,8 @@ export const createVideo = async (req, res, next) => {
     }
 
     const video = await Video.create({
-      title,
-      description: description || "",
+      title: trimmedTitle,
+      description: trimmedDescription,
       thumbnailUrl,
       videoUrl,
       category,
