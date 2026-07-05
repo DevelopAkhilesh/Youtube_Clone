@@ -21,7 +21,7 @@ import authRoutes from "./routes/auth.routes.js";
 // import userRoutes from "./routes/user.routes.js";
 import videoRoutes from "./routes/video.routes.js";
 import channelRoutes from "./routes/channel.routes.js";
-// import commentRoutes from "./routes/comment.routes.js";
+import commentRoutes from "./routes/comment.routes.js";
 // import playlistRoutes from "./routes/playlist.routes.js";
 
 const app = express();
@@ -44,7 +44,7 @@ app.use("/api/auth", authRoutes);
 // app.use("/api/users", userRoutes);
 app.use("/api/videos", videoRoutes);
 app.use("/api/channels", channelRoutes);
-// app.use("/api/comments", commentRoutes);
+app.use("/api/comments", commentRoutes);
 // app.use("/api/playlists", playlistRoutes);
 
 // Error handling (must be LAST)
