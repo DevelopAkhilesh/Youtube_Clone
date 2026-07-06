@@ -1,3 +1,7 @@
+// server/src/seed/seed.js
+// Run with: npm run seed
+// Populates MongoDB with realistic-looking YT clone data:
+//   8 channels · 40 videos · 6 categories · real thumbnails · real comments
 
 import "dotenv/config";
 import { connectDB } from "../config/db.js";
@@ -14,13 +18,7 @@ const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
-// The old Google "gtv-videos-bucket" sample clips have become unreliable
-// (intermittent AccessDenied / 403s as Google deprecates the legacy bucket —
-// see https://gist.github.com/jsturgis/3b19447b304616f18657 for reports).
-// Each of these is on a DIFFERENT host (W3Schools, MDN's GitHub Pages, MDN's
-// interactive-examples server) so one host going down doesn't break the
-// whole demo. All three individually verified live (real video binary
-// returned, no redirect/auth wall) at the time this was written.
+// Three reliable public video URLs (different hosts)
 const TEST_VIDEOS = [
   "https://www.w3schools.com/html/mov_bbb.mp4",
   "https://mdn.github.io/learning-area/html/multimedia-and-embedding/video-and-audio-content/rabbit320.webm",
@@ -28,7 +26,7 @@ const TEST_VIDEOS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Thumbnails — Unsplash category-matched images (no API key needed at these dims)
+// Thumbnails — Unsplash category-matched images (no API key needed)
 // ---------------------------------------------------------------------------
 const thumbs = {
   "Web Development": [
@@ -98,38 +96,39 @@ const USERS_DEF = [
   { username: "learnwithme", email: "learn@example.com", password: "password123", avatar: "https://i.pravatar.cc/150?img=60" },
 ];
 
+// ✅ FIXED: changed 'channelBanner' to 'banner' to match the Channel model
 const CHANNELS_DEF = [
   { channelName: "CodeWithJohn",  handle: "@CodeWithJohn",  ownerIdx: 0, subscribers: 128400,
     description: "Full-stack web development tutorials — React, Node.js, MongoDB and more.",
-    channelBanner: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1280&h=350&fit=crop",
+    banner: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1280&h=350&fit=crop",
     avatar: "https://i.pravatar.cc/150?img=1" },
   { channelName: "Priya Codes",   handle: "@PriyaCodes",    ownerIdx: 1, subscribers: 87200,
     description: "JavaScript, TypeScript & frontend performance tips for modern developers.",
-    channelBanner: "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=1280&h=350&fit=crop",
+    banner: "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=1280&h=350&fit=crop",
     avatar: "https://i.pravatar.cc/150?img=5" },
   { channelName: "AlgoMaster",    handle: "@AlgoMaster",    ownerIdx: 2, subscribers: 210000,
     description: "Data structures, algorithms, and competitive programming explained visually.",
-    channelBanner: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1280&h=350&fit=crop",
+    banner: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1280&h=350&fit=crop",
     avatar: "https://i.pravatar.cc/150?img=8" },
   { channelName: "Nikhil Plays",  handle: "@NikhilPlays",   ownerIdx: 3, subscribers: 345000,
     description: "Gaming highlights, walkthroughs, and reviews. GTA, Valorant, and more!",
-    channelBanner: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1280&h=350&fit=crop",
+    banner: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1280&h=350&fit=crop",
     avatar: "https://i.pravatar.cc/150?img=12" },
   { channelName: "Sara Beats",    handle: "@SaraBeats",     ownerIdx: 4, subscribers: 95000,
     description: "Lo-fi, chillhop, and music production tutorials. Beats to study and relax to.",
-    channelBanner: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1280&h=350&fit=crop",
+    banner: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1280&h=350&fit=crop",
     avatar: "https://i.pravatar.cc/150?img=20" },
   { channelName: "DevAnon",       handle: "@DevAnon",       ownerIdx: 5, subscribers: 62000,
     description: "Anonymous dev takes on tech, open source, and the daily grind of software engineering.",
-    channelBanner: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1280&h=350&fit=crop",
+    banner: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1280&h=350&fit=crop",
     avatar: "https://i.pravatar.cc/150?img=33" },
   { channelName: "Rahul GG",      handle: "@RahulGG",       ownerIdx: 6, subscribers: 189000,
     description: "Speedruns, esports highlights, and game reviews from India's gaming scene.",
-    channelBanner: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1280&h=350&fit=crop",
+    banner: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1280&h=350&fit=crop",
     avatar: "https://i.pravatar.cc/150?img=47" },
   { channelName: "LearnWithMe",   handle: "@LearnWithMe",   ownerIdx: 7, subscribers: 415000,
     description: "Bite-sized education: science, history, maths, and general knowledge.",
-    channelBanner: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1280&h=350&fit=crop",
+    banner: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1280&h=350&fit=crop",
     avatar: "https://i.pravatar.cc/150?img=60" },
 ];
 
@@ -179,7 +178,7 @@ const VIDEO_SEED = [
   { title: "The Science of Sleep — Why You're Always Tired",     category: "Education",       channelIdx: 7, uploaderIdx: 7, views: 3870000, likes: 172000, dislikes: 2900, thumbIdx: 0 },
 ];
 
-// Descriptions keyed by title (keeps the VIDEO_SEED array tidy)
+// Descriptions keyed by title
 const DESCRIPTIONS = {
   "Build a Full-Stack App with MERN in 1 Hour": "Build a complete Todo app from scratch using MongoDB, Express, React and Node.js. No experience needed — just code along!",
   "React 18 New Features You Need to Know": "Concurrent rendering, automatic batching, useTransition and Suspense — everything new in React 18 with runnable examples.",
@@ -294,3 +293,101 @@ const COMMENT_POOLS = {
     "If only schools taught things this way. We'd have so many more scientists.",
   ],
 };
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+const run = async () => {
+  await connectDB();
+
+  console.log("🗑  Clearing existing collections...");
+  await Promise.all([
+    User.deleteMany({}),
+    Channel.deleteMany({}),
+    Video.deleteMany({}),
+    Comment.deleteMany({}),
+  ]);
+
+  console.log("👤 Creating users...");
+  const users = await User.create(USERS_DEF);
+
+  console.log("📺 Creating channels...");
+  // ✅ FIXED: using 'banner' instead of 'channelBanner'
+  const channels = await Channel.create(
+    CHANNELS_DEF.map((c) => ({
+      channelName: c.channelName,
+      handle: c.handle,
+      owner: users[c.ownerIdx]._id,
+      description: c.description,
+      banner: c.banner,
+      avatar: c.avatar,
+      subscribers: c.subscribers,
+    }))
+  );
+  for (let i = 0; i < CHANNELS_DEF.length; i++) {
+    await User.findByIdAndUpdate(users[CHANNELS_DEF[i].ownerIdx]._id, {
+      $push: { channels: channels[i]._id },
+    });
+  }
+
+  console.log("🎬 Creating videos...");
+  const now = Date.now();
+  const EIGHTEEN_MONTHS_MS = 18 * 30 * 24 * 60 * 60 * 1000;
+  const allUserIds = users.map((u) => u._id);
+
+  const videoDocuments = VIDEO_SEED.map((v) => {
+    const likeCount  = Math.min(v.likes  % users.length || 1, users.length);
+    const dislikeCount = Math.min(v.dislikes % users.length, users.length);
+    return {
+      title: v.title,
+      description: DESCRIPTIONS[v.title] || `${v.title} — sample video for testing.`,
+      thumbnailUrl: thumbPick(v.category, v.thumbIdx),
+      videoUrl: pick(TEST_VIDEOS),
+      category: v.category,
+      channel: channels[v.channelIdx]._id,
+      uploader: users[v.uploaderIdx]._id,
+      views: v.views,
+      likes: shuffle(allUserIds).slice(0, likeCount),
+      dislikes: shuffle(allUserIds).slice(0, dislikeCount),
+      createdAt: new Date(now - rand(0, EIGHTEEN_MONTHS_MS)),
+    };
+  });
+
+  const videos = await Video.create(videoDocuments);
+  for (const video of videos) {
+    await Channel.findByIdAndUpdate(video.channel, { $push: { videos: video._id } });
+  }
+
+  console.log("💬 Creating comments...");
+  const commentDocs = [];
+  for (const video of videos) {
+    const pool = COMMENT_POOLS[video.category] ?? COMMENT_POOLS["Education"];
+    const texts = shuffle(pool).slice(0, rand(3, 7));
+    for (const text of texts) {
+      commentDocs.push({
+        video: video._id,
+        user: users[rand(0, users.length - 1)]._id,
+        text,
+        createdAt: new Date(video.createdAt.getTime() + rand(0, 30 * 24 * 60 * 60 * 1000)),
+      });
+    }
+  }
+  await Comment.create(commentDocs);
+
+  const catCounts = VIDEO_SEED.reduce((acc, v) => {
+    acc[v.category] = (acc[v.category] || 0) + 1;
+    return acc;
+  }, {});
+
+  console.log("\n✅ Seed complete!");
+  console.log(`   ${users.length} users | ${channels.length} channels | ${videos.length} videos | ${commentDocs.length} comments`);
+  Object.entries(catCounts).forEach(([cat, n]) => console.log(`     • ${cat}: ${n}`));
+
+  await mongoose.connection.close();
+  process.exit(0);
+};
+
+run().catch((err) => {
+  console.error("Seed failed:", err);
+  process.exit(1);
+});
