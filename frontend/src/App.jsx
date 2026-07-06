@@ -1,122 +1,111 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import Layout from "./components/layout/Layout.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
-function App() {
-  const [count, setCount] = useState(0)
+// Pages
+import HomePage from "./pages/HomePage.jsx";
+import VideoPlayerPage from "./pages/VideoPlayerPage.jsx";
+import ChannelPage from "./pages/ChannelPage.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
+import RegisterPage from "./pages/RegisterPage.jsx";
+import UploadVideoPage from "./pages/UploadVideoPage.jsx";
+import SubscriptionsPage from "./pages/SubscriptionsPage.jsx";
+import HistoryPage from "./pages/HistoryPage.jsx";
+import PlaylistsPage from "./pages/PlaylistsPage.jsx";
+import WatchLaterPage from "./pages/WatchLaterPage.jsx";
+import LikedVideosPage from "./pages/LikedVideosPage.jsx";
+import YourVideosPage from "./pages/YourVideosPage.jsx";
+import DownloadsPage from "./pages/DownloadsPage.jsx";
+import ShortsPage from "./pages/ShortsPage.jsx";
+import NotFoundPage from "./pages/NotFoundPage.jsx";
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+// Helper: wraps element with ProtectedRoute
+const protect = (element) => <ProtectedRoute>{element}</ProtectedRoute>;
 
-      <div className="ticks"></div>
+export const router = createBrowserRouter([
+  // Auth pages – no Layout
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
-
-export default App
+  // Main app – with Layout
+  {
+    element: <Layout />,
+    children: [
+      {
+        path: "/",
+        element: <HomePage />,
+      },
+      {
+        path: "/video/:id",
+        element: <VideoPlayerPage />,
+      },
+      {
+        path: "/channel/:id",
+        element: <ChannelPage />,
+      },
+      {
+        path: "/channel/me",
+        element: <ChannelPage />,
+      },
+      {
+        path: "/channel/new",
+        element: <ChannelPage />,
+      },
+      {
+        path: "/shorts",
+        element: <ShortsPage />,
+      },
+      // Protected routes
+      {
+        path: "/upload",
+        element: protect(<UploadVideoPage />),
+      },
+      {
+        path: "/upload/:id",
+        element: protect(<UploadVideoPage />),
+      },
+      {
+        path: "/subscriptions",
+        element: protect(<SubscriptionsPage />),
+      },
+      {
+        path: "/history",
+        element: protect(<HistoryPage />),
+      },
+      {
+        path: "/playlists",
+        element: protect(<PlaylistsPage />),
+      },
+      {
+        path: "/playlists/:id",
+        element: protect(<PlaylistsPage />),
+      },
+      {
+        path: "/watch-later",
+        element: protect(<WatchLaterPage />),
+      },
+      {
+        path: "/liked",
+        element: protect(<LikedVideosPage />),
+      },
+      {
+        path: "/your-videos",
+        element: protect(<YourVideosPage />),
+      },
+      {
+        path: "/downloads",
+        element: protect(<DownloadsPage />),
+      },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
+    ],
+  },
+]);
