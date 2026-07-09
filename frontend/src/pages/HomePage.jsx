@@ -1,4 +1,11 @@
-function NotFoundPage() {
-  return <h1>404 – Page Not Found</h1>;
+import React from 'react'
+
+const HomePage = () => {
+  return (
+    <div>
+      <h1>HomePage</h1>
+    </div>
+  )
 }
-export default NotFoundPage;
+
+export default HomePage
