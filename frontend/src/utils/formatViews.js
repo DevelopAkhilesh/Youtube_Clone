@@ -3,6 +3,11 @@ export function formatViews(n) {
   if (n >= 1_000) return (n / 1_000).toFixed(1) + "K views";
   return n + " views";
 }
+export function formatNumber(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+  return n.toString();
+}
 
 export function formatDate(dateStr) {
   const now = Date.now();

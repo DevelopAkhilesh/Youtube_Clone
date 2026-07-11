@@ -6,10 +6,11 @@ import {
   likeVideo,
   dislikeVideo,
 } from "../services/videoService";
-import { toggleSubscribe } from "../services/channelService";
+import { toggleSubscribe, getChannelById } from "../services/channelService";
 import { addHistory } from "../services/userService";
 import CommentSection from "../components/video/CommentSection";
-import { formatViews, formatDate } from "../utils/formatViews";
+import { formatViews, formatDate } from "../utils/formatViews.js";
+import { formatNumber } from "../utils/formatViews.js";
 import toast from "react-hot-toast";
 
 function VideoPlayerPage() {
@@ -62,14 +63,13 @@ function VideoPlayerPage() {
             setIsOwner(user._id === videoData.uploader._id);
           }
 
-          // Check subscription status
+          // Check subscription status from user data
           if (user && videoData.channel) {
             const isSubbed =
               user.subscribedChannels?.some(
                 (c) => c._id === videoData.channel._id
               ) || false;
             setIsSubscribed(isSubbed);
-            setSubscribersCount(videoData.channel.subscribers || 0);
           }
 
           // Log watch history (non-blocking)
@@ -97,6 +97,31 @@ function VideoPlayerPage() {
     };
   }, [id, user]);
 
+  // 👇 NEW: Fetch channel separately for accurate subscriber count
+  useEffect(() => {
+    if (!video?.channel?._id) return;
+
+    let cancelled = false;
+
+    const fetchChannel = async () => {
+      try {
+        const res = await getChannelById(video.channel._id);
+        if (!cancelled) {
+          setSubscribersCount(res.data.subscribers || 0);
+        }
+      } catch (err) {
+        // Fallback to 0 if channel fetch fails
+        console.error("Failed to fetch channel subscribers:", err);
+      }
+    };
+
+    fetchChannel();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [video?.channel?._id]);
+
   // Handlers
   const handleLike = async () => {
     if (!user) {
@@ -109,7 +134,6 @@ function VideoPlayerPage() {
       setLikesCount(res.data.likesCount);
       setDislikesCount(res.data.dislikesCount);
       setUserHasLiked(res.data.userHasLiked);
-      // If liked, ensure dislike is false
       if (res.data.userHasLiked) {
         setUserHasDisliked(false);
       }
@@ -129,7 +153,6 @@ function VideoPlayerPage() {
       setLikesCount(res.data.likesCount);
       setDislikesCount(res.data.dislikesCount);
       setUserHasDisliked(res.data.userHasDisliked);
-      // If disliked, ensure like is false
       if (res.data.userHasDisliked) {
         setUserHasLiked(false);
       }
@@ -153,7 +176,7 @@ function VideoPlayerPage() {
       const res = await toggleSubscribe(video.channel._id);
       setIsSubscribed(res.data.subscribed);
       setSubscribersCount(res.data.subscribers);
-      await refreshUser(); // Refresh user state to update subscribedChannels
+      await refreshUser();
       toast.success(
         res.data.subscribed ? "Subscribed!" : "Unsubscribed"
       );
@@ -180,9 +203,7 @@ function VideoPlayerPage() {
     );
   }
 
-  // Channel info
   const channel = video.channel;
-  const uploader = video.uploader;
 
   return (
     <div style={styles.container}>
@@ -216,7 +237,7 @@ function VideoPlayerPage() {
                 {channel?.channelName || "Unknown Channel"}
               </Link>
               <span style={styles.subscriberCount}>
-                {formatViews(subscribersCount)} subscribers
+                {formatNumber(subscribersCount)} subscribers {/* ✅ FIXED */}
               </span>
             </div>
           </div>
@@ -262,7 +283,7 @@ function VideoPlayerPage() {
 
         {/* Video Stats */}
         <div style={styles.stats}>
-          <span>{formatViews(video.views)} views</span>
+          <span>{formatViews(video.views)}</span>
           <span>•</span>
           <span>{formatDate(video.createdAt)}</span>
         </div>
@@ -281,7 +302,6 @@ function VideoPlayerPage() {
       {/* Right Sidebar – Related Videos */}
       <div style={styles.sidebar}>
         <h3 style={styles.sidebarTitle}>Related Videos</h3>
-        {/* We'll implement Related Videos later */}
         <p style={{ color: "#606060" }}>Suggested videos will appear here</p>
       </div>
     </div>
@@ -302,7 +322,7 @@ const styles = {
   },
   videoWrapper: {
     position: "relative",
-    paddingBottom: "56.25%", // 16:9 aspect ratio
+    paddingBottom: "56.25%",
     height: 0,
     background: "#000",
     borderRadius: "8px",
