@@ -4,7 +4,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 
 // Pages
 import HomePage from "./pages/HomePage.jsx";
-// import VideoPlayerPage from "./pages/VideoPlayerPage.jsx";
+import VideoPlayerPage from "./pages/VideoPlayerPage.jsx";
 // import ChannelPage from "./pages/ChannelPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
@@ -41,10 +41,10 @@ export const router = createBrowserRouter([
         path: "/",
         element: <HomePage />,
       },
-      // {
-      //   path: "/video/:id",
-      //   element: <VideoPlayerPage />,
-      // },
+      {
+        path: "/video/:id",
+        element: <VideoPlayerPage />,
+      },
       // {
       //   path: "/channel/:id",
       //   element: <ChannelPage />,
