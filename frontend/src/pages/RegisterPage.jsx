@@ -1,46 +1,52 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
 
 function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  // Form state
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  // Single state object for all form fields
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  // Single toggle for showing/hiding passwords (both fields)
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+
+  // Handle field changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   // Validate form
   const validate = () => {
     const errors = {};
+    const { username, email, password, confirmPassword } = formData;
 
-    // Username
     if (!username.trim() || username.trim().length < 3) {
       errors.username = "Username must be at least 3 characters";
     }
 
-    // Email
     if (!email.trim()) {
       errors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = "Please enter a valid email address";
     }
 
-    // Password
     if (!password) {
       errors.password = "Password is required";
     } else if (password.length < 6) {
       errors.password = "Password must be at least 6 characters";
     }
 
-    // Confirm Password
     if (!confirmPassword) {
       errors.confirmPassword = "Please confirm your password";
     } else if (password !== confirmPassword) {
@@ -54,19 +60,19 @@ function RegisterPage() {
   // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setFieldErrors({});
 
     if (!validate()) return;
 
     setLoading(true);
     try {
-      await register(username.trim(), email, password);
-      // On success, redirect to login (per backend spec – no auto-login)
-      navigate("/login", { state: { message: "Registration successful! Please log in." } });
+      await register(formData.username.trim(), formData.email, formData.password);
+      toast.success("Registration successful! Please log in.");
+      navigate("/login");
     } catch (err) {
       const message = err.response?.data?.message || "Registration failed. Please try again.";
-      setError(message);
-      // If backend returns field-specific errors, map them
+      toast.error(message);
+
       if (err.response?.data?.errors) {
         const fieldErr = {};
         err.response.data.errors.forEach((e) => {
@@ -79,22 +85,11 @@ function RegisterPage() {
     }
   };
 
-  // Toggle password visibility
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
-
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>Sign Up</h1>
         <p style={styles.subtitle}>Create your YouTube Clone account</p>
-
-        {error && <div style={styles.errorBanner}>{error}</div>}
 
         <form onSubmit={handleSubmit}>
           {/* Username */}
@@ -102,8 +97,9 @@ function RegisterPage() {
             <label style={styles.label}>Username</label>
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
               style={{
                 ...styles.input,
                 borderColor: fieldErrors.username ? "#dc3545" : "#ddd",
@@ -120,8 +116,9 @@ function RegisterPage() {
             <label style={styles.label}>Email</label>
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
               style={{
                 ...styles.input,
                 borderColor: fieldErrors.email ? "#dc3545" : "#ddd",
@@ -139,8 +136,9 @@ function RegisterPage() {
             <div style={styles.passwordWrapper}>
               <input
                 type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
                 style={{
                   ...styles.input,
                   borderColor: fieldErrors.password ? "#dc3545" : "#ddd",
@@ -150,7 +148,7 @@ function RegisterPage() {
               />
               <button
                 type="button"
-                onClick={togglePasswordVisibility}
+                onClick={() => setShowPassword(!showPassword)}
                 style={styles.toggleButton}
                 tabIndex="-1"
               >
@@ -178,9 +176,10 @@ function RegisterPage() {
             <label style={styles.label}>Confirm Password</label>
             <div style={styles.passwordWrapper}>
               <input
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                type={showPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
                 style={{
                   ...styles.input,
                   borderColor: fieldErrors.confirmPassword ? "#dc3545" : "#ddd",
@@ -188,13 +187,14 @@ function RegisterPage() {
                 }}
                 disabled={loading}
               />
+              {/* Same toggle button – but we already have one above; we could hide it here or keep it for consistency */}
               <button
                 type="button"
-                onClick={toggleConfirmPasswordVisibility}
+                onClick={() => setShowPassword(!showPassword)}
                 style={styles.toggleButton}
                 tabIndex="-1"
               >
-                {showConfirmPassword ? (
+                {showPassword ? (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                     <circle cx="12" cy="12" r="3" />
@@ -234,6 +234,7 @@ function RegisterPage() {
   );
 }
 
+// Styles remain the same (can remove errorBanner)
 const styles = {
   container: {
     display: "flex",
@@ -301,14 +302,6 @@ const styles = {
     marginTop: "4px",
     color: "#dc3545",
     fontSize: "13px",
-  },
-  errorBanner: {
-    background: "#f8d7da",
-    color: "#721c24",
-    padding: "10px 14px",
-    borderRadius: "4px",
-    marginBottom: "16px",
-    fontSize: "14px",
   },
   button: {
     width: "100%",
