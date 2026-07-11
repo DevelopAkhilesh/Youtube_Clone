@@ -1,10 +1,13 @@
+// components/auth/ProtectedRoute.jsx — FE-09
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../hooks/useAuth.js";
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { isAuthed, loading } = useAuth();
+
   if (loading) return null;
-  return user ? children : <Navigate to="/login" replace />;
+
+  return isAuthed ? children : <Navigate to="/login" replace />;
 }
 
 export default ProtectedRoute;
