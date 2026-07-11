@@ -5,7 +5,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 // Pages
 import HomePage from "./pages/HomePage.jsx";
 import VideoPlayerPage from "./pages/VideoPlayerPage.jsx";
-// import ChannelPage from "./pages/ChannelPage.jsx";
+import ChannelPage from "./pages/ChannelPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 // import UploadVideoPage from "./pages/UploadVideoPage.jsx";
@@ -42,21 +42,26 @@ export const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
+       path: "/channel",
+       element: <Navigate to="/channel/me" replace />,
+      },
+      {
         path: "/video/:id",
         element: <VideoPlayerPage />,
       },
-      // {
-      //   path: "/channel/:id",
-      //   element: <ChannelPage />,
-      // },
-      // {
-      //   path: "/channel/me",
-      //   element: <ChannelPage />,
-      // },
-      // {
-      //   path: "/channel/new",
-      //   element: <ChannelPage />,
-      // },
+      
+      {
+        path: "/channel/me",
+        element: <ChannelPage />,
+      },
+      {
+        path: "/channel/new",
+        element: <ChannelPage />,
+      },
+      {
+        path: "/channel/:id",
+        element: <ChannelPage />,
+      },
       // {
       //   path: "/shorts",
       //   element: <ShortsPage />,
