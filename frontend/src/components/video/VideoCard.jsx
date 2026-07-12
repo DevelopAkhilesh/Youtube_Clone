@@ -1,70 +1,94 @@
+// components/video/VideoCard.jsx — pixel-perfect YT dark card
 import { Link } from "react-router-dom";
-import { formatViews, formatDate } from "../../utils/formatViews";
+import PropTypes from "prop-types";
+import { formatViews, formatDate } from "../../utils/formatViews.js";
+import SaveMenu from "./SaveMenu.jsx";
+
+const FALLBACK_THUMB = "https://placehold.co/320x180/272727/aaaaaa?text=No+Thumbnail";
+
+function formatDuration(seconds) {
+  if (!seconds || isNaN(seconds)) return null;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 function VideoCard({ video }) {
-  const { _id, title, thumbnailUrl, channel, views, createdAt } = video;
-  const avatar =
-    channel?.avatar ||
-    "https://ui-avatars.com/api/?background=random&name=Channel";
+  const { _id, title, thumbnailUrl, channel, views, createdAt, duration } = video;
+  const channelName   = channel?.channelName || "Unknown Channel";
+  const channelAvatar = channel?.avatar;
+  const avatarInitial = channelName[0]?.toUpperCase() || "C";
+  const channelId     = channel?._id;
+  const durationStr   = formatDuration(duration);
 
   return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: "8px",
-        overflow: "hidden",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        transition: "transform 0.2s",
-      }}
-    >
-      <Link to={`/video/${_id}`}>
+    <div className="video-card">
+      {/* Thumbnail */}
+      <Link to={`/video/${_id}`} className="video-card__thumb-wrap" tabIndex={-1}>
         <img
-          src={thumbnailUrl}
+          className="video-card__thumb"
+          src={thumbnailUrl || FALLBACK_THUMB}
           alt={title}
-          style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover" }}
+          loading="lazy"
+          onError={(e) => { e.target.src = FALLBACK_THUMB; }}
         />
+        {durationStr && (
+          <span className="video-card__duration">{durationStr}</span>
+        )}
+        <SaveMenu videoId={_id} />
       </Link>
-      <div style={{ display: "flex", gap: "12px", padding: "12px" }}>
-        <Link to={`/channel/${channel?._id}`}>
-          <img
-            src={avatar}
-            alt={channel?.channelName}
-            style={{ width: "36px", height: "36px", borderRadius: "50%" }}
-          />
+
+      {/* Info row */}
+      <div className="video-card__info">
+        {/* Channel avatar */}
+        <Link to={channelId ? `/channel/${channelId}` : "#"} className="video-card__avatar">
+          {channelAvatar
+            ? <img src={channelAvatar} alt={channelName} />
+            : <span>{avatarInitial}</span>
+          }
         </Link>
-        <div style={{ flex: 1 }}>
-          <Link
-            to={`/video/${_id}`}
-            style={{
-              fontWeight: 600,
-              textDecoration: "none",
-              color: "#000",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {title}
+
+        <div className="video-card__meta">
+          <Link to={`/video/${_id}`} className="video-card__title-link">
+            <p className="video-card__title">{title}</p>
           </Link>
-          <Link
-            to={`/channel/${channel?._id}`}
-            style={{
-              display: "block",
-              color: "#606060",
-              fontSize: "14px",
-              textDecoration: "none",
-            }}
-          >
-            {channel?.channelName || "Unknown"}
+          <Link to={channelId ? `/channel/${channelId}` : "#"} className="video-card__channel">
+            {channelName}
           </Link>
-          <span style={{ color: "#606060", fontSize: "13px" }}>
-            {formatViews(views)} • {formatDate(createdAt)}
-          </span>
+          <p className="video-card__stats">
+            {formatViews(views)} · {formatDate(createdAt)}
+          </p>
         </div>
       </div>
     </div>
   );
 }
+
+// PropTypes for better type safety
+VideoCard.propTypes = {
+  video: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    thumbnailUrl: PropTypes.string,
+    channel: PropTypes.shape({
+      _id: PropTypes.string,
+      channelName: PropTypes.string,
+      avatar: PropTypes.string,
+    }),
+    views: PropTypes.number,
+    createdAt: PropTypes.string,
+    duration: PropTypes.number,
+  }).isRequired,
+};
+
+VideoCard.defaultProps = {
+  video: {
+    thumbnailUrl: FALLBACK_THUMB,
+    views: 0,
+    duration: null,
+  },
+};
 
 export default VideoCard;
