@@ -1,127 +1,90 @@
+
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getVideos } from "../services/videoService";
-import { useDebounce } from "../utils/useDebounce";
-import FilterBar from "../components/video/FilterBar";
-import VideoCard from "../components/video/VideoCard";
+import PropTypes from "prop-types";
+import FilterBar from "../components/video/FilterBar.jsx";
+import VideoGrid from "../components/video/VideoGrid.jsx";
+import { getVideos } from "../services/videoService.js";
+import { useDebounce } from "../hooks/useDebounce.js";
 
 function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
+  const activeCategory = searchParams.get("category") || "";
+
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Read filters from URL
-  const searchQuery = searchParams.get("search") || "";
-  const activeCategory = searchParams.get("category") || "";
+  // Debounce the search term before hitting the API. The URL itself updates
+  // instantly (Layout writes it on every keystroke) — this debounce only
+  // guards the network call, so typing fast doesn't fire a request per letter.
   const debouncedSearch = useDebounce(searchQuery, 400);
 
-  // Fetch videos when search or category changes
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError(null);
 
-    const fetchVideos = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const params = {};
-        if (debouncedSearch) params.search = debouncedSearch;
-        if (activeCategory) params.category = activeCategory;
+    const params = {};
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (activeCategory) params.category = activeCategory;
 
-        const res = await getVideos(params);
+    getVideos(params)
+      .then((res) => {
         if (!cancelled) {
+          // ✅ FIX: Backend returns array directly, not nested under "videos"
           setVideos(res.data);
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         if (!cancelled) {
           setError(err.response?.data?.message || "Failed to load videos");
         }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-    fetchVideos();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [debouncedSearch, activeCategory]);
 
-  // Handlers
-  const handleSearch = (value) => {
-    setSearchParams((prev) => {
-      if (value) {
-        prev.set("search", value);
-      } else {
-        prev.delete("search");
-      }
-      prev.delete("category"); // Clear category when searching
-      return prev;
-    });
+  const handleCategorySelect = (cat) => {
+    // Clearing search when a category is picked mirrors the original behaviour
+    // (search and category filter are mutually exclusive, not combined).
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (cat) next.set("category", cat);
+        else next.delete("category");
+        next.delete("search");
+        return next;
+      },
+      { replace: false } // ✅ Better for browser history
+    );
   };
-
-  const handleCategorySelect = (category) => {
-    setSearchParams((prev) => {
-      if (category) {
-        prev.set("category", category);
-      } else {
-        prev.delete("category");
-      }
-      prev.delete("search"); // Clear search when selecting category
-      return prev;
-    });
-  };
-
-  // Render states
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", padding: "40px" }}>
-        Loading videos...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ textAlign: "center", padding: "40px", color: "red" }}>
-        Error: {error}
-      </div>
-    );
-  }
-
-  if (videos.length === 0) {
-    return (
-      <div style={{ textAlign: "center", padding: "40px" }}>
-        <p>No videos found {debouncedSearch && `for "${debouncedSearch}"`}</p>
-      </div>
-    );
-  }
 
   return (
-    <div>
+    <>
       <FilterBar
-        searchQuery={searchQuery}
-        onSearch={handleSearch}
+        // ✅ FIX: Pass empty string for "All"
         activeCategory={activeCategory}
-        onCategorySelect={handleCategorySelect}
+        onSelectCategory={handleCategorySelect}
       />
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "20px",
-          marginTop: "20px",
-        }}
-      >
-        {videos.map((video) => (
-          <VideoCard key={video._id} video={video} />
-        ))}
-      </div>
-    </div>
+      <VideoGrid 
+        videos={videos} 
+        loading={loading} 
+        error={error} 
+        emptyTitle="No videos found"
+        emptyMessage={searchQuery ? `No videos found for "${searchQuery}"` : "Try adjusting your filters"}
+      />
+    </>
   );
 }
+
+HomePage.propTypes = {
+  // No props – this is a page component
+};
 
 export default HomePage;
