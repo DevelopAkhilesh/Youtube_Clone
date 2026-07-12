@@ -9,7 +9,7 @@ import { getCommentsForVideo, addComment, updateComment, deleteComment } from ".
 import { toggleSubscribe } from "../services/channelService.js";
 import { addHistory } from "../services/userService.js";
 import { useAuth } from "../hooks/useAuth.js";
-import { formatViews, formatDate, formatNumber } from "../utils/formatViews.js";
+import { formatViews, formatDate} from "../utils/formatViews.js";
 import toast from "react-hot-toast";
 
 const SUGGESTION_CHIPS = ["All", "Related", "For you", "Recently uploaded", "Watched"];

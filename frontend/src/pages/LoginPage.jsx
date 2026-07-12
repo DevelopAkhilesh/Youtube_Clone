@@ -7,6 +7,23 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { validateEmail } from "../utils/validators.js";
+import toast from "react-hot-toast";
+
+// ── SVG Icons ──────────────────────────────────────────────
+const EyeIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+    <line x1="21" y1="3" x2="3" y2="21" />
+  </svg>
+);
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -16,6 +33,7 @@ function LoginPage() {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,6 +60,7 @@ function LoginPage() {
     setLoading(true);
     try {
       await login(fields.email, fields.password);
+      toast.success("Welcome back!");
       navigate("/");
     } catch (err) {
       const msg =
@@ -54,12 +73,14 @@ function LoginPage() {
     }
   };
 
+  const togglePassword = () => setShowPassword((prev) => !prev);
+
   return (
     <div className="auth-page">
       <div className="auth-card">
         {/* YouTube-style logo */}
         <div className="auth-logo">
-          <svg height="20" viewBox="0 0 90 20" focusable="false">
+          <svg height="20" viewBox="0 0 30 20" focusable="false">
             <g>
               <path
                 d="M27.9727 3.12324C27.6435 1.89323 26.6768 0.926623 25.4468 0.597366C23.2197 2.24288e-07 14.285 0 14.285 0C14.285 0 5.35042 2.24288e-07 3.12323 0.597366C1.89323 0.926623 0.926623 1.89323 0.597366 3.12324C2.24288e-07 5.35042 0 10 0 10C0 10 2.24288e-07 14.6496 0.597366 16.8768C0.926623 18.1068 1.89323 19.0734 3.12323 19.4026C5.35042 20 14.285 20 14.285 20C14.285 20 23.2197 20 25.4468 19.4026C26.6768 19.0734 27.6435 18.1068 27.9727 16.8768C28.5701 14.6496 28.5701 10 28.5701 10C28.5701 10 28.5677 5.35042 27.9727 3.12324Z"
@@ -94,16 +115,27 @@ function LoginPage() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              value={fields.password}
-              onChange={handleChange}
-              className={errors.password ? "input-error" : ""}
-              placeholder="Enter your password"
-            />
+            <div className="password-wrapper">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={fields.password}
+                onChange={handleChange}
+                className={errors.password ? "input-error" : ""}
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={togglePassword}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                tabIndex="-1"
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
             {errors.password && <span className="field-error">{errors.password}</span>}
           </div>
 

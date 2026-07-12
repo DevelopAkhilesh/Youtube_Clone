@@ -9,6 +9,22 @@ import { useAuth } from "../hooks/useAuth.js";
 import { validateEmail, validatePassword, validateUsername } from "../utils/validators.js";
 import toast from "react-hot-toast";
 
+// ── SVG Icons ──────────────────────────────────────────────
+const EyeIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+    <line x1="21" y1="3" x2="3" y2="21" />
+  </svg>
+);
+
 function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -17,7 +33,7 @@ function RegisterPage() {
     username: "",
     email: "",
     password: "",
-    confirmPassword: "", // ✅ Added confirm password
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
@@ -42,7 +58,6 @@ function RegisterPage() {
       errs.password = "Password must be at least 6 characters";
     if (fields.password !== fields.confirmPassword)
       errs.confirmPassword = "Passwords do not match";
-
     return errs;
   };
 
@@ -59,10 +74,8 @@ function RegisterPage() {
       toast.success("Registration successful! Please log in.");
       navigate("/login");
     } catch (err) {
-      // Backend returns either { message } or { errors: [{ msg }] }
       const serverErrors = err.response?.data?.errors;
       if (serverErrors) {
-        // Map field-level errors from express-validator back onto form fields
         const mapped = {};
         serverErrors.forEach(({ path, msg }) => {
           if (path) mapped[path] = msg;
@@ -87,7 +100,7 @@ function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <svg height="20" viewBox="0 0 90 20" focusable="false">
+          <svg height="20" viewBox="0 0 30 20" focusable="false">
             <g>
               <path
                 d="M27.9727 3.12324C27.6435 1.89323 26.6768 0.926623 25.4468 0.597366C23.2197 2.24288e-07 14.285 0 14.285 0C14.285 0 5.35042 2.24288e-07 3.12323 0.597366C1.89323 0.926623 0.926623 1.89323 0.597366 3.12324C2.24288e-07 5.35042 0 10 0 10C0 10 2.24288e-07 14.6496 0.597366 16.8768C0.926623 18.1068 1.89323 19.0734 3.12323 19.4026C5.35042 20 14.285 20 14.285 20C14.285 20 23.2197 20 25.4468 19.4026C26.6768 19.0734 27.6435 18.1068 27.9727 16.8768C28.5701 14.6496 28.5701 10 28.5701 10C28.5701 10 28.5677 5.35042 27.9727 3.12324Z"
@@ -105,7 +118,6 @@ function RegisterPage() {
         {apiError && <div className="auth-api-error">{apiError}</div>}
 
         <form onSubmit={handleSubmit} noValidate>
-          {/* Username */}
           <div className="form-group">
             <label htmlFor="username">Username</label>
             <input
@@ -121,7 +133,6 @@ function RegisterPage() {
             {errors.username && <span className="field-error">{errors.username}</span>}
           </div>
 
-          {/* Email */}
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -158,7 +169,7 @@ function RegisterPage() {
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 tabIndex="-1"
               >
-                {showPassword ? "🙈" : "👁️"}
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
             {errors.password && <span className="field-error">{errors.password}</span>}
@@ -185,7 +196,7 @@ function RegisterPage() {
                 aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                 tabIndex="-1"
               >
-                {showConfirmPassword ? "🙈" : "👁️"}
+                {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
             {errors.confirmPassword && <span className="field-error">{errors.confirmPassword}</span>}
@@ -197,8 +208,7 @@ function RegisterPage() {
         </form>
 
         <p className="auth-switch">
-          Already have an account?{" "}
-          <Link to="/login">Sign in</Link>
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>
     </div>
