@@ -1,134 +1,145 @@
+// client/src/pages/VideoPlayerPage.jsx
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import {
-  getVideoById,
-  likeVideo,
-  dislikeVideo,
-} from "../services/videoService";
-import { toggleSubscribe, getChannelById } from "../services/channelService";
-import { addHistory } from "../services/userService";
-import CommentSection from "../components/video/CommentSection";
-import { formatViews, formatDate } from "../utils/formatViews.js";
-import { formatNumber } from "../utils/formatViews.js";
+import VideoPlayer from "../components/video/VideoPlayer.jsx";
+import CommentSection from "../components/comments/CommentSection.jsx";
+import SaveMenu from "../components/video/SaveMenu.jsx";
+import { getVideoById, getVideos, likeVideo, dislikeVideo } from "../services/videoService.js";
+import { getCommentsForVideo, addComment, updateComment, deleteComment } from "../services/commentService.js";
+import { toggleSubscribe } from "../services/channelService.js";
+import { addHistory } from "../services/userService.js";
+import { useAuth } from "../hooks/useAuth.js";
+import { formatViews, formatDate, formatNumber } from "../utils/formatViews.js";
 import toast from "react-hot-toast";
+
+const SUGGESTION_CHIPS = ["All", "Related", "For you", "Recently uploaded", "Watched"];
+const FALLBACK_THUMB   = "https://placehold.co/168x94/272727/aaaaaa?text=No+Thumbnail";
+
+function formatDuration(s) {
+  if (!s || isNaN(s)) return null;
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+  return `${m}:${String(sec).padStart(2,"0")}`;
+}
+
+function ThumbUpIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+      {filled
+        ? <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>
+        : <path d="M9 21h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2zm0-12.41L11.17 6.4l-.41 1.98-.56 2.62H19v1.66l-2.97 6.93L9 18.59V8.59zM1 9h4v12H1z"/>
+      }
+    </svg>
+  );
+}
+
+function ThumbDownIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+      {filled
+        ? <path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L10.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/>
+        : <path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L10.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm0 11.59L12.83 16.6l.41-1.98.56-2.62H5v-1.66L7.97 3.4 15 3.41V14.59zM19 3h4v12h-4z"/>
+      }
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+      <path d="M15 5.63 20.66 12 15 18.37V15h-1c-3.96 0-7.14 1-9.75 3.09 1.04-4.74 4.05-8.44 9.75-9.89V5.63M14 3v5c-5.22.7-9.19 4.44-10.5 9.33C2.1 20.19 1 24 1 24s4.22-1.1 6.47-2.65C10.21 19.44 12.94 19 15 19h.5v5l8.5-6-8.5-6z"/>
+    </svg>
+  );
+}
 
 function VideoPlayerPage() {
   const { id } = useParams();
+  const { user, isAuthed, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const { user, refreshUser } = useAuth();
 
-  // State
-  const [video, setVideo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [likesCount, setLikesCount] = useState(0);
-  const [dislikesCount, setDislikesCount] = useState(0);
-  const [userHasLiked, setUserHasLiked] = useState(false);
+  const [video,         setVideo]         = useState(null);
+  const [videoLoading,  setVideoLoading]  = useState(true);
+  const [videoError,    setVideoError]    = useState(false);
+  const [comments,      setComments]      = useState([]);
+  const [suggestions,   setSuggestions]   = useState([]);
+  const [activeChip,    setActiveChip]    = useState("All");
+  const [descExpanded,  setDescExpanded]  = useState(false);
+  const [subscribeLoading, setSubscribeLoading] = useState(false);
+
+  const [likesCount,      setLikesCount]      = useState(0);
+  const [dislikesCount,   setDislikesCount]   = useState(0);
+  const [userHasLiked,    setUserHasLiked]    = useState(false);
   const [userHasDisliked, setUserHasDisliked] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [subscribersCount, setSubscribersCount] = useState(0);
-  const [isOwner, setIsOwner] = useState(false);
+  const [likeLoading,     setLikeLoading]     = useState(false);
 
   // Fetch video
   useEffect(() => {
     let cancelled = false;
+    setVideoLoading(true);
+    setVideoError(false);
+    getVideoById(id)
+      .then((res) => {
+        if (cancelled) return;
+        const v = res.data;  // ✅ fixed
+        setVideo(v);
+        setLikesCount(v.likes?.length ?? 0);
+        setDislikesCount(v.dislikes?.length ?? 0);
+      })
+      .catch(() => {
+        if (!cancelled) setVideoError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setVideoLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
 
-    const fetchVideo = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await getVideoById(id);
-        if (!cancelled) {
-          const videoData = res.data;
-          setVideo(videoData);
-
-          // Set counts and states
-          setLikesCount(videoData.likes?.length || 0);
-          setDislikesCount(videoData.dislikes?.length || 0);
-
-          // Check if user has liked/disliked
-          if (user) {
-            const userId = user._id;
-            setUserHasLiked(
-              videoData.likes?.some((uid) => uid === userId) || false
-            );
-            setUserHasDisliked(
-              videoData.dislikes?.some((uid) => uid === userId) || false
-            );
-          }
-
-          // Check if user is the owner
-          if (user && videoData.uploader) {
-            setIsOwner(user._id === videoData.uploader._id);
-          }
-
-          // Check subscription status from user data
-          if (user && videoData.channel) {
-            const isSubbed =
-              user.subscribedChannels?.some(
-                (c) => c._id === videoData.channel._id
-              ) || false;
-            setIsSubscribed(isSubbed);
-          }
-
-          // Log watch history (non-blocking)
-          if (user) {
-            addHistory(id).catch(() => {
-              // Silently fail – don't show error to user
-            });
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err.response?.data?.message || "Failed to load video");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchVideo();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id, user]);
-
-  // 👇 NEW: Fetch channel separately for accurate subscriber count
+  // Sync like/dislike states
   useEffect(() => {
-    if (!video?.channel?._id) return;
-
-    let cancelled = false;
-
-    const fetchChannel = async () => {
-      try {
-        const res = await getChannelById(video.channel._id);
-        if (!cancelled) {
-          setSubscribersCount(res.data.subscribers || 0);
-        }
-      } catch (err) {
-        // Fallback to 0 if channel fetch fails
-        console.error("Failed to fetch channel subscribers:", err);
-      }
-    };
-
-    fetchChannel();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [video?.channel?._id]);
-
-  // Handlers
-  const handleLike = async () => {
-    if (!user) {
-      toast.error("Please log in to like videos");
+    if (!video || !user) {
+      setUserHasLiked(false);
+      setUserHasDisliked(false);
       return;
     }
+    const matchesUser = (uid) => uid === user._id || uid?._id === user._id;
+    setUserHasLiked(video.likes?.some(matchesUser) ?? false);
+    setUserHasDisliked(video.dislikes?.some(matchesUser) ?? false);
+  }, [video, user]);
 
+  // Log history
+  useEffect(() => {
+    if (isAuthed && video?._id) {
+      addHistory(video._id).catch(() => {});
+    }
+  }, [isAuthed, video?._id]);
+
+  // Fetch comments
+  useEffect(() => {
+    let cancelled = false;
+    getCommentsForVideo(id)
+      .then((res) => {
+        if (!cancelled) setComments(res.data); // ✅ fixed
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [id]);
+
+  // Fetch suggestions
+  useEffect(() => {
+    let cancelled = false;
+    getVideos({}) // ✅ removed limit
+      .then((res) => {
+        if (cancelled) return;
+        const vids = res.data || []; // ✅ fixed
+        setSuggestions(vids.filter((v) => v._id !== id).slice(0, 15));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [id]);
+
+  const handleLike = async () => {
+    if (!isAuthed || likeLoading) return;
+    setLikeLoading(true);
     try {
       const res = await likeVideo(id);
       setLikesCount(res.data.likesCount);
@@ -137,17 +148,16 @@ function VideoPlayerPage() {
       if (res.data.userHasLiked) {
         setUserHasDisliked(false);
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to like video");
+    } finally {
+      setLikeLoading(false);
     }
   };
 
   const handleDislike = async () => {
-    if (!user) {
-      toast.error("Please log in to dislike videos");
-      return;
-    }
-
+    if (!isAuthed || likeLoading) return;
+    setLikeLoading(true);
     try {
       const res = await dislikeVideo(id);
       setLikesCount(res.data.likesCount);
@@ -156,289 +166,209 @@ function VideoPlayerPage() {
       if (res.data.userHasDisliked) {
         setUserHasLiked(false);
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to dislike video");
+    } finally {
+      setLikeLoading(false);
     }
   };
 
-  const handleSubscribe = async () => {
-    if (!user) {
-      toast.error("Please log in to subscribe");
-      return;
-    }
-
-    if (isOwner) {
-      toast.error("You cannot subscribe to your own channel");
-      return;
-    }
-
+  const handleAddComment = async (videoId, text) => {
     try {
-      const res = await toggleSubscribe(video.channel._id);
-      setIsSubscribed(res.data.subscribed);
-      setSubscribersCount(res.data.subscribers);
-      await refreshUser();
-      toast.success(
-        res.data.subscribed ? "Subscribed!" : "Unsubscribed"
-      );
+      const res = await addComment({ video: videoId, text });
+      setComments((prev) => [res.data.comment, ...prev]);
+      toast.success("Comment added!");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to subscribe");
+      toast.error(err.response?.data?.message || "Failed to add comment");
     }
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", padding: "60px" }}>
-        Loading video...
-      </div>
-    );
-  }
+  const handleEditComment = async (commentId, text) => {
+    try {
+      const res = await updateComment(commentId, { text });
+      setComments((prev) =>
+        prev.map((c) => (c._id === commentId ? res.data.comment : c))
+      );
+      toast.success("Comment updated!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update comment");
+    }
+  };
 
-  // Error state
-  if (error || !video) {
-    return (
-      <div style={{ textAlign: "center", padding: "60px", color: "red" }}>
-        {error || "Video not found"}
-      </div>
-    );
-  }
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Delete this comment?")) return;
+    try {
+      await deleteComment(commentId);
+      setComments((prev) => prev.filter((c) => c._id !== commentId));
+      toast.success("Comment deleted!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete comment");
+    }
+  };
 
-  const channel = video.channel;
+  const channelOwnerId = video?.channel?.owner;
+  const isOwnChannel = isAuthed && channelOwnerId && user?._id === channelOwnerId;
+  const isSubscribed = isAuthed && (user?.subscribedChannels || []).some(
+    (c) => (typeof c === "string" ? c : c._id) === video?.channel?._id
+  );
+
+  const handleToggleSubscribe = async () => {
+    if (!isAuthed) {
+      navigate("/login");
+      return;
+    }
+    setSubscribeLoading(true);
+    try {
+      await toggleSubscribe(video.channel._id);
+      await refreshUser();
+      toast.success(isSubscribed ? "Unsubscribed!" : "Subscribed!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update subscription.");
+    } finally {
+      setSubscribeLoading(false);
+    }
+  };
+
+  if (videoLoading) return <div className="vpp-loading">Loading video…</div>;
+  if (videoError || !video) return (
+    <div className="vpp-error"><p>Video not found or failed to load.</p><Link to="/">← Back to home</Link></div>
+  );
+
+  const channelName = video.channel?.channelName || "Unknown Channel";
+  const channelId   = video.channel?._id;
+  const subs        = video.channel?.subscribers || 0; // ✅ fixed
+  const subText     = subs > 0 ? `${formatNumber(subs)} subscribers` : "";
 
   return (
-    <div style={styles.container}>
-      <div style={styles.mainContent}>
-        {/* Video Player */}
-        <div style={styles.videoWrapper}>
-          <video
-            src={video.videoUrl}
-            controls
-            autoPlay
-            style={styles.videoPlayer}
-            poster={video.thumbnailUrl}
-          />
-        </div>
+    <div className="vpp-layout">
+      <div className="vpp-main">
+        <VideoPlayer src={video.videoUrl} poster={video.thumbnailUrl} />
 
-        {/* Video Title */}
-        <h1 style={styles.title}>{video.title}</h1>
+        <h1 className="vpp-title">{video.title}</h1>
 
-        {/* Channel Info & Actions */}
-        <div style={styles.channelBar}>
-          <div style={styles.channelInfo}>
-            <Link to={`/channel/${channel?._id}`}>
-              <img
-                src={channel?.avatar || "https://ui-avatars.com/api/?background=random&name=Channel"}
-                alt={channel?.channelName}
-                style={styles.channelAvatar}
-              />
-            </Link>
-            <div>
-              <Link to={`/channel/${channel?._id}`} style={styles.channelName}>
-                {channel?.channelName || "Unknown Channel"}
+        <div className="vpp-meta">
+          <div className="vpp-channel-row">
+            <div className="vpp-channel-info">
+              <Link to={channelId ? `/channel/${channelId}` : "#"} className="vpp-channel-avatar">
+                {channelName[0]?.toUpperCase()}
               </Link>
-              <span style={styles.subscriberCount}>
-                {formatNumber(subscribersCount)} subscribers {/* ✅ FIXED */}
-              </span>
+              <div className="vpp-channel-name-wrap">
+                <Link to={channelId ? `/channel/${channelId}` : "#"} className="vpp-channel-name">
+                  {channelName}
+                </Link>
+                {subText && <span className="vpp-subscriber-count">{subText}</span>}
+              </div>
             </div>
-          </div>
 
-          <div style={styles.actions}>
-            {/* Subscribe Button */}
-            {!isOwner && (
+            {!isOwnChannel && (
               <button
-                onClick={handleSubscribe}
-                style={{
-                  ...styles.subscribeBtn,
-                  background: isSubscribed ? "#ccc" : "#000",
-                  color: isSubscribed ? "#000" : "#fff",
-                }}
+                className={`vpp-subscribe-btn${isSubscribed ? " vpp-subscribe-btn--subscribed" : ""}`}
+                onClick={handleToggleSubscribe}
+                disabled={subscribeLoading}
               >
                 {isSubscribed ? "Subscribed" : "Subscribe"}
               </button>
             )}
+          </div>
 
-            {/* Like/Dislike Buttons */}
-            <div style={styles.likeDislike}>
+          <div className="vpp-actions">
+            <div className="like-dislike">
               <button
+                className={`ld-btn${userHasLiked ? " ld-btn--active" : ""}`}
                 onClick={handleLike}
-                style={{
-                  ...styles.likeBtn,
-                  color: userHasLiked ? "#065fd4" : "#666",
-                }}
+                disabled={!isAuthed || likeLoading}
+                aria-label="Like"
               >
-                👍 {likesCount > 0 && likesCount}
+                <ThumbUpIcon filled={userHasLiked} />
+                <span>{likesCount > 0 ? likesCount.toLocaleString() : "Like"}</span>
               </button>
+              <div className="ld-divider" />
               <button
+                className={`ld-btn${userHasDisliked ? " ld-btn--active" : ""}`}
                 onClick={handleDislike}
-                style={{
-                  ...styles.dislikeBtn,
-                  color: userHasDisliked ? "#065fd4" : "#666",
-                }}
+                disabled={!isAuthed || likeLoading}
+                aria-label="Dislike"
               >
-                👎 {dislikesCount > 0 && dislikesCount}
+                <ThumbDownIcon filled={userHasDisliked} />
+                {dislikesCount > 0 && <span>{dislikesCount.toLocaleString()}</span>}
               </button>
             </div>
+
+            <button className="vpp-action-btn">
+              <ShareIcon />
+              <span>Share</span>
+            </button>
+
+            <SaveMenu videoId={id} />
           </div>
         </div>
 
-        {/* Video Stats */}
-        <div style={styles.stats}>
-          <span>{formatViews(video.views)}</span>
-          <span>•</span>
-          <span>{formatDate(video.createdAt)}</span>
+        <div className="vpp-description">
+          <p className="vpp-views">
+            {formatViews(video.views)} views · {formatDate(video.createdAt)}
+          </p>
+          {video.description && (
+            <>
+              <p style={{ marginTop: 8 }} className={descExpanded ? "" : "vpp-description--clamped"}>
+                {video.description}
+              </p>
+              {video.description.length > 200 && (
+                <button className="vpp-desc-toggle" onClick={() => setDescExpanded((p) => !p)}>
+                  {descExpanded ? "Show less" : "...more"}
+                </button>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Description */}
-        {video.description && (
-          <div style={styles.description}>
-            <p>{video.description}</p>
-          </div>
-        )}
-
-        {/* Comments Section */}
-        <CommentSection videoId={id} />
+        <CommentSection
+          videoId={id}
+          comments={comments}
+          onAdd={handleAddComment}
+          onEdit={handleEditComment}
+          onDelete={handleDeleteComment}
+        />
       </div>
 
-      {/* Right Sidebar – Related Videos */}
-      <div style={styles.sidebar}>
-        <h3 style={styles.sidebarTitle}>Related Videos</h3>
-        <p style={{ color: "#606060" }}>Suggested videos will appear here</p>
-      </div>
+      <aside className="vpp-sidebar">
+        <div className="vpp-chips">
+          {SUGGESTION_CHIPS.map((chip) => (
+            <button
+              key={chip}
+              className={`vpp-chip${activeChip === chip ? " vpp-chip--active" : ""}`}
+              onClick={() => setActiveChip(chip)}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+
+        <div className="vpp-suggestions">
+          {suggestions.map((v) => (
+            <Link key={v._id} to={`/video/${v._id}`} className="vpp-suggestion-card">
+              <div className="vpp-suggestion-thumb-wrap">
+                <img
+                  src={v.thumbnailUrl || FALLBACK_THUMB}
+                  alt={v.title}
+                  className="vpp-suggestion-thumb"
+                  loading="lazy"
+                  onError={(e) => { e.target.src = FALLBACK_THUMB; }}
+                />
+                {v.duration && (
+                  <span className="vpp-suggestion-duration">{formatDuration(v.duration)}</span>
+                )}
+              </div>
+              <div className="vpp-suggestion-info">
+                <p className="vpp-suggestion-title">{v.title}</p>
+                <p className="vpp-suggestion-channel">{v.channel?.channelName || "Unknown"}</p>
+                <p className="vpp-suggestion-stats">{formatViews(v.views)} · {formatDate(v.createdAt)}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </aside>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    display: "flex",
-    gap: "24px",
-    maxWidth: "1400px",
-    margin: "0 auto",
-    padding: "20px",
-  },
-  mainContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  videoWrapper: {
-    position: "relative",
-    paddingBottom: "56.25%",
-    height: 0,
-    background: "#000",
-    borderRadius: "8px",
-    overflow: "hidden",
-  },
-  videoPlayer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-  },
-  title: {
-    fontSize: "24px",
-    fontWeight: "600",
-    margin: "16px 0 12px 0",
-  },
-  channelBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "16px",
-    padding: "12px 0",
-    borderTop: "1px solid #ddd",
-    borderBottom: "1px solid #ddd",
-  },
-  channelInfo: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-  channelAvatar: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "50%",
-  },
-  channelName: {
-    fontWeight: "600",
-    textDecoration: "none",
-    color: "#000",
-    fontSize: "16px",
-  },
-  subscriberCount: {
-    display: "block",
-    fontSize: "13px",
-    color: "#606060",
-  },
-  actions: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-  subscribeBtn: {
-    padding: "8px 16px",
-    borderRadius: "20px",
-    border: "none",
-    fontWeight: "600",
-    cursor: "pointer",
-    fontSize: "14px",
-    transition: "background 0.2s",
-  },
-  likeDislike: {
-    display: "flex",
-    gap: "4px",
-  },
-  likeBtn: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "16px",
-    padding: "8px 12px",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    borderRadius: "20px",
-    transition: "background 0.2s",
-  },
-  dislikeBtn: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "16px",
-    padding: "8px 12px",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    borderRadius: "20px",
-    transition: "background 0.2s",
-  },
-  stats: {
-    display: "flex",
-    gap: "8px",
-    color: "#606060",
-    fontSize: "14px",
-    marginTop: "8px",
-  },
-  description: {
-    background: "#f9f9f9",
-    padding: "16px",
-    borderRadius: "8px",
-    marginTop: "16px",
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-  },
-  sidebar: {
-    width: "400px",
-    flexShrink: 0,
-    paddingLeft: "24px",
-    borderLeft: "1px solid #ddd",
-  },
-  sidebarTitle: {
-    fontSize: "18px",
-    fontWeight: "600",
-    marginBottom: "16px",
-  },
-};
 
 export default VideoPlayerPage;
