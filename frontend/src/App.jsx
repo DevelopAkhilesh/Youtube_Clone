@@ -62,10 +62,10 @@ export const router = createBrowserRouter([
         path: "/channel/:id",
         element: <ChannelPage />,
       },
-      // {
-      //   path: "/shorts",
-      //   element: <ShortsPage />,
-      // },
+      {
+        path: "/shorts",
+        element: <ShortsPage />,
+      },
       // // Protected routes
       // {
       //   path: "/upload",
