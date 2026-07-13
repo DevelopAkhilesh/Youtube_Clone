@@ -9,14 +9,15 @@ import ChannelPage from "./pages/ChannelPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 // import UploadVideoPage from "./pages/UploadVideoPage.jsx";
-// import SubscriptionsPage from "./pages/SubscriptionsPage.jsx";
+import SubscriptionsPage from "./pages/SubscriptionsPage.jsx";
 // import HistoryPage from "./pages/HistoryPage.jsx";
-// import PlaylistsPage from "./pages/PlaylistsPage.jsx";
-// import WatchLaterPage from "./pages/WatchLaterPage.jsx";
+import PlaylistsPage from "./pages/PlaylistsPage.jsx";
+import PlaylistDetailPage from "./pages/PlaylistDetailPage.jsx";
+import WatchLaterPage from "./pages/WatchLaterPage.jsx";
 // import LikedVideosPage from "./pages/LikedVideosPage.jsx";
 import YourVideosPage from "./pages/YourVideosPage.jsx";
 // import DownloadsPage from "./pages/DownloadsPage.jsx";
-// import ShortsPage from "./pages/ShortsPage.jsx";
+import ShortsPage from "./pages/ShortsPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
 
 // Helper: wraps element with ProtectedRoute
@@ -83,14 +84,14 @@ export const router = createBrowserRouter([
       //   path: "/history",
       //   element: protect(<HistoryPage />),
       // },
-      // {
-      //   path: "/playlists",
-      //   element: protect(<PlaylistsPage />),
-      // },
-      // {
-      //   path: "/playlists/:id",
-      //   element: protect(<PlaylistsPage />),
-      // },
+      {
+        path: "/playlists",
+        element: protect(<PlaylistsPage />),
+      },
+      {
+        path: "/playlists/:id",
+        element: protect(<PlaylistsDetailPage />),
+      },
       {
         path: "/watch-later",
         element: protect(<WatchLaterPage />),
