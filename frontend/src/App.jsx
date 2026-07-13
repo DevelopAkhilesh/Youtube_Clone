@@ -75,10 +75,10 @@ export const router = createBrowserRouter([
       //   path: "/upload/:id",
       //   element: protect(<UploadVideoPage />),
       // },
-      // {
-      //   path: "/subscriptions",
-      //   element: protect(<SubscriptionsPage />),
-      // },
+      {
+        path: "/subscriptions",
+        element: protect(<SubscriptionsPage />),
+      },
       // {
       //   path: "/history",
       //   element: protect(<HistoryPage />),
