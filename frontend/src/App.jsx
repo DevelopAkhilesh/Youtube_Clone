@@ -10,7 +10,7 @@ import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 // import UploadVideoPage from "./pages/UploadVideoPage.jsx";
 import SubscriptionsPage from "./pages/SubscriptionsPage.jsx";
-// import HistoryPage from "./pages/HistoryPage.jsx";
+import HistoryPage from "./pages/HistoryPage.jsx";
 import PlaylistsPage from "./pages/PlaylistsPage.jsx";
 import PlaylistDetailPage from "./pages/PlaylistDetailPage.jsx";
 import WatchLaterPage from "./pages/WatchLaterPage.jsx";
@@ -80,10 +80,10 @@ export const router = createBrowserRouter([
         path: "/subscriptions",
         element: protect(<SubscriptionsPage />),
       },
-      // {
-      //   path: "/history",
-      //   element: protect(<HistoryPage />),
-      // },
+      {
+        path: "/history",
+        element: protect(<HistoryPage />),
+      },
       {
         path: "/playlists",
         element: protect(<PlaylistsPage />),
@@ -96,10 +96,10 @@ export const router = createBrowserRouter([
         path: "/watch-later",
         element: protect(<WatchLaterPage />),
       },
-      // {
-      //   path: "/liked",
-      //   element: protect(<LikedVideosPage />),
-      // },
+      {
+        path: "/liked",
+        element: protect(<LikedVideosPage />),
+      },
       {
         path: "/your-videos",
         element: protect(<YourVideosPage />),
