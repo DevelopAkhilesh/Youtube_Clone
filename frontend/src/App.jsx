@@ -91,10 +91,10 @@ export const router = createBrowserRouter([
       //   path: "/playlists/:id",
       //   element: protect(<PlaylistsPage />),
       // },
-      // {
-      //   path: "/watch-later",
-      //   element: protect(<WatchLaterPage />),
-      // },
+      {
+        path: "/watch-later",
+        element: protect(<WatchLaterPage />),
+      },
       // {
       //   path: "/liked",
       //   element: protect(<LikedVideosPage />),
