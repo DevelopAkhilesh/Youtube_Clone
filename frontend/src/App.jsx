@@ -14,7 +14,7 @@ import RegisterPage from "./pages/RegisterPage.jsx";
 // import PlaylistsPage from "./pages/PlaylistsPage.jsx";
 // import WatchLaterPage from "./pages/WatchLaterPage.jsx";
 // import LikedVideosPage from "./pages/LikedVideosPage.jsx";
-// import YourVideosPage from "./pages/YourVideosPage.jsx";
+import YourVideosPage from "./pages/YourVideosPage.jsx";
 // import DownloadsPage from "./pages/DownloadsPage.jsx";
 // import ShortsPage from "./pages/ShortsPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
@@ -99,10 +99,10 @@ export const router = createBrowserRouter([
       //   path: "/liked",
       //   element: protect(<LikedVideosPage />),
       // },
-      // {
-      //   path: "/your-videos",
-      //   element: protect(<YourVideosPage />),
-      // },
+      {
+        path: "/your-videos",
+        element: protect(<YourVideosPage />),
+      },
       // {
       //   path: "/downloads",
       //   element: protect(<DownloadsPage />),

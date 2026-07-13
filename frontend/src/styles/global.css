@@ -663,7 +663,7 @@ img { display: block; }
 }
 
 .vpp-main {
-  flex: 1; min-width: 0; max-width: 854px;
+  flex: 1; min-width: 0;
 }
 
 /* Player */
