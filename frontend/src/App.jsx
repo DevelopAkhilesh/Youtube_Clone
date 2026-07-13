@@ -104,10 +104,10 @@ export const router = createBrowserRouter([
         path: "/your-videos",
         element: protect(<YourVideosPage />),
       },
-      // {
-      //   path: "/downloads",
-      //   element: protect(<DownloadsPage />),
-      // },
+      {
+        path: "/downloads",
+        element: protect(<DownloadsPage />),
+      },
       {
         path: "*",
         element: <NotFoundPage />,
