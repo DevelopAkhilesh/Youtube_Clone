@@ -1,37 +1,54 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./components/layout/Layout.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 
-// Pages
-import HomePage from "./pages/HomePage.jsx";
-import VideoPlayerPage from "./pages/VideoPlayerPage.jsx";
-import ChannelPage from "./pages/ChannelPage.jsx";
-import LoginPage from "./pages/LoginPage.jsx";
-import RegisterPage from "./pages/RegisterPage.jsx";
-// import UploadVideoPage from "./pages/UploadVideoPage.jsx";
-import SubscriptionsPage from "./pages/SubscriptionsPage.jsx";
-import HistoryPage from "./pages/HistoryPage.jsx";
-import PlaylistsPage from "./pages/PlaylistsPage.jsx";
-import PlaylistDetailPage from "./pages/PlaylistDetailPage.jsx";
-import WatchLaterPage from "./pages/WatchLaterPage.jsx";
-import LikedVideosPage from "./pages/LikedVideosPage.jsx";
-import YourVideosPage from "./pages/YourVideosPage.jsx";
-// import DownloadsPage from "./pages/DownloadsPage.jsx";
-import ShortsPage from "./pages/ShortsPage.jsx";
-import NotFoundPage from "./pages/NotFoundPage.jsx";
+// ── Lazy-load pages ──────────────────────────────────────
+const HomePage = lazy(() => import("./pages/HomePage.jsx"));
+const VideoPlayerPage = lazy(() => import("./pages/VideoPlayerPage.jsx"));
+const ChannelPage = lazy(() => import("./pages/ChannelPage.jsx"));
+const LoginPage = lazy(() => import("./pages/LoginPage.jsx"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage.jsx"));
+const UploadVideoPage = lazy(() => import("./pages/UploadVideoPage.jsx"));
+const SubscriptionsPage = lazy(() => import("./pages/SubscriptionsPage.jsx"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage.jsx"));
+const PlaylistsPage = lazy(() => import("./pages/PlaylistsPage.jsx"));
+const PlaylistDetailPage = lazy(() => import("./pages/PlaylistDetailPage.jsx"));
+const WatchLaterPage = lazy(() => import("./pages/WatchLaterPage.jsx"));
+const LikedVideosPage = lazy(() => import("./pages/LikedVideosPage.jsx"));
+const YourVideosPage = lazy(() => import("./pages/YourVideosPage.jsx"));
+const DownloadsPage = lazy(() => import("./pages/DownloadsPage.jsx"));
+const ShortsPage = lazy(() => import("./pages/ShortsPage.jsx"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 
-// Helper: wraps element with ProtectedRoute
+// ── Helper ────────────────────────────────────────────────
 const protect = (element) => <ProtectedRoute>{element}</ProtectedRoute>;
 
+// ── Suspense fallback ─────────────────────────────────────
+const PageLoader = () => (
+  <div style={{ padding: "40px", textAlign: "center", color: "#aaa" }}>
+    Loading…
+  </div>
+);
+
+// ── Router ────────────────────────────────────────────────
 export const router = createBrowserRouter([
   // Auth pages – no Layout
   {
     path: "/login",
-    element: <LoginPage />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <LoginPage />
+      </Suspense>
+    ),
   },
   {
     path: "/register",
-    element: <RegisterPage />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <RegisterPage />
+      </Suspense>
+    ),
   },
 
   // Main app – with Layout
@@ -40,77 +57,144 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <HomePage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <HomePage />
+          </Suspense>
+        ),
       },
       {
-       path: "/channel",
-       element: <Navigate to="/channel/me" replace />,
+        path: "/channel",
+        element: <Navigate to="/channel/me" replace />,
       },
       {
         path: "/video/:id",
-        element: <VideoPlayerPage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <VideoPlayerPage />
+          </Suspense>
+        ),
       },
-      
       {
         path: "/channel/me",
-        element: <ChannelPage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ChannelPage />
+          </Suspense>
+        ),
       },
       {
         path: "/channel/new",
-        element: <ChannelPage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ChannelPage />
+          </Suspense>
+        ),
       },
       {
         path: "/channel/:id",
-        element: <ChannelPage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ChannelPage />
+          </Suspense>
+        ),
       },
       {
         path: "/shorts",
-        element: <ShortsPage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ShortsPage />
+          </Suspense>
+        ),
       },
-      // // Protected routes
-      // {
-      //   path: "/upload",
-      //   element: protect(<UploadVideoPage />),
-      // },
-      // {
-      //   path: "/upload/:id",
-      //   element: protect(<UploadVideoPage />),
-      // },
+      // ── Protected routes ──
+      {
+        path: "/upload",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<UploadVideoPage />)}
+          </Suspense>
+        ),
+      },
+      {
+        path: "/upload/:id",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<UploadVideoPage />)}
+          </Suspense>
+        ),
+      },
       {
         path: "/subscriptions",
-        element: protect(<SubscriptionsPage />),
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<SubscriptionsPage />)}
+          </Suspense>
+        ),
       },
       {
         path: "/history",
-        element: protect(<HistoryPage />),
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<HistoryPage />)}
+          </Suspense>
+        ),
       },
       {
         path: "/playlists",
-        element: protect(<PlaylistsPage />),
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<PlaylistsPage />)}
+          </Suspense>
+        ),
       },
       {
         path: "/playlists/:id",
-        element: protect(<PlaylistDetailPage />),
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<PlaylistDetailPage />)}
+          </Suspense>
+        ),
       },
       {
         path: "/watch-later",
-        element: protect(<WatchLaterPage />),
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<WatchLaterPage />)}
+          </Suspense>
+        ),
       },
       {
         path: "/liked",
-        element: protect(<LikedVideosPage />),
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<LikedVideosPage />)}
+          </Suspense>
+        ),
       },
       {
         path: "/your-videos",
-        element: protect(<YourVideosPage />),
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<YourVideosPage />)}
+          </Suspense>
+        ),
       },
       {
         path: "/downloads",
-        element: protect(<DownloadsPage />),
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            {protect(<DownloadsPage />)}
+          </Suspense>
+        ),
       },
       {
         path: "*",
-        element: <NotFoundPage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <NotFoundPage />
+          </Suspense>
+        ),
       },
     ],
   },
