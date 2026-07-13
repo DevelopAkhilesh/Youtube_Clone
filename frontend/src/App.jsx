@@ -14,7 +14,7 @@ import SubscriptionsPage from "./pages/SubscriptionsPage.jsx";
 import PlaylistsPage from "./pages/PlaylistsPage.jsx";
 import PlaylistDetailPage from "./pages/PlaylistDetailPage.jsx";
 import WatchLaterPage from "./pages/WatchLaterPage.jsx";
-// import LikedVideosPage from "./pages/LikedVideosPage.jsx";
+import LikedVideosPage from "./pages/LikedVideosPage.jsx";
 import YourVideosPage from "./pages/YourVideosPage.jsx";
 // import DownloadsPage from "./pages/DownloadsPage.jsx";
 import ShortsPage from "./pages/ShortsPage.jsx";
@@ -90,7 +90,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "/playlists/:id",
-        element: protect(<PlaylistsDetailPage />),
+        element: protect(<PlaylistDetailPage />),
       },
       {
         path: "/watch-later",
