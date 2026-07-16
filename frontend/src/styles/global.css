@@ -551,7 +551,7 @@ img { display: block; }
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 0;
   padding: 0 16px 16px;
-  justify-items: start;
+  
 }
 
 @media (min-width: 1800px) { .video-grid { grid-template-columns: repeat(5, 1fr); } }
@@ -573,7 +573,7 @@ img { display: block; }
   display: block; text-decoration: none; color: inherit;
   padding: 0 8px 16px;
   position: relative;
-  max-width: 320px;           /* Prevents stretching */
+  /* max-width: 320px;           Prevents stretching */
    
 }
 .video-card:hover .video-card__thumb { transform: scale(1.02); }
