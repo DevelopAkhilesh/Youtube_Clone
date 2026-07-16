@@ -49,8 +49,7 @@ function HistoryPage() {
   };
 
   // Each entry is { video, watchedAt } — VideoGrid only needs the video itself.
-  const videos = history.map((entry) => entry.video).filter(Boolean);
-
+  const videos = history
   return (
     <div className="library-page">
       <div className="library-page__header">

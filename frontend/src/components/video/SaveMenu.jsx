@@ -1,20 +1,20 @@
 // components/video/SaveMenu.jsx
-// The "..." save panel used on video cards and the watch page — lets a
-// signed-in user toggle Watch later / Downloads and add/remove the video
-// from their own playlists, all from one place. This mirrors how YouTube's
-// own "Save to playlist" flyout folds Watch later in as just another row
-// instead of giving it a separate button.
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { useAuth } from "../../hooks/useAuth.js";
-import { getVideoSaveStatus, toggleWatchLater, toggleDownload } from "../../services/userService.js";
+import {
+  getVideoSaveStatus,
+  toggleWatchLater,
+  toggleDownload,
+} from "../../services/userService.js";
 import {
   getMyPlaylists,
   createPlaylist,
   addVideoToPlaylist,
   removeVideoFromPlaylist,
 } from "../../services/playlistService.js";
+import toast from "react-hot-toast";
 
 const MoreIcon = () => (
   <svg viewBox="0 0 24 24" height="16" width="16" fill="currentColor">
@@ -29,13 +29,16 @@ function SaveMenu({ videoId }) {
 
   const [open, setOpen] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(false);
-  const [status, setStatus] = useState({ inWatchLater: false, inDownloads: false, playlistIds: [] });
+  const [status, setStatus] = useState({
+    inWatchLater: false,
+    inDownloads: false,
+    playlistIds: [],
+  });
   const [playlists, setPlaylists] = useState([]);
   const [busy, setBusy] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
 
-  // Close on outside click — same pattern as the header's account dropdown.
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
@@ -52,18 +55,14 @@ function SaveMenu({ videoId }) {
         getMyPlaylists(),
       ]);
       setStatus(statusRes.data);
-      // ✅ FIX: getMyPlaylists returns the array directly, not nested
       setPlaylists(playlistsRes.data);
     } catch {
-      // Quiet failure — this is a convenience panel, not a critical flow.
-      // Worst case it just shows everything unchecked.
+      // silent
     } finally {
       setLoadingStatus(false);
     }
   };
 
-  // The trigger sits inside a <Link> (video card thumbnail) — preventDefault
-  // here is what stops that Link from navigating when this is clicked.
   const handleTriggerClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -74,6 +73,7 @@ function SaveMenu({ videoId }) {
     const next = !open;
     setOpen(next);
     setCreating(false);
+    setBusy(false); // reset busy on open
     if (next) loadStatus();
   };
 
@@ -82,11 +82,15 @@ function SaveMenu({ videoId }) {
     e.stopPropagation();
   };
 
+  // --- toggles ---
   const handleToggleWatchLater = async () => {
     setBusy(true);
     try {
       const res = await toggleWatchLater(videoId);
       setStatus((s) => ({ ...s, inWatchLater: res.data.saved }));
+      toast.success(res.data.saved ? "Added to Watch later" : "Removed from Watch later");
+    } catch {
+      toast.error("Failed to update Watch later");
     } finally {
       setBusy(false);
     }
@@ -97,6 +101,9 @@ function SaveMenu({ videoId }) {
     try {
       const res = await toggleDownload(videoId);
       setStatus((s) => ({ ...s, inDownloads: res.data.downloaded }));
+      toast.success(res.data.downloaded ? "Downloaded" : "Removed from downloads");
+    } catch {
+      toast.error("Failed to update downloads");
     } finally {
       setBusy(false);
     }
@@ -107,31 +114,59 @@ function SaveMenu({ videoId }) {
     try {
       if (alreadyIn) {
         await removeVideoFromPlaylist(playlistId, videoId);
-        setStatus((s) => ({ ...s, playlistIds: s.playlistIds.filter((id) => id !== playlistId) }));
+        setStatus((s) => ({
+          ...s,
+          playlistIds: s.playlistIds.filter((id) => id !== playlistId),
+        }));
+        toast.success("Removed from playlist");
       } else {
         await addVideoToPlaylist(playlistId, videoId);
-        setStatus((s) => ({ ...s, playlistIds: [...s.playlistIds, playlistId] }));
+        setStatus((s) => ({
+          ...s,
+          playlistIds: [...s.playlistIds, playlistId],
+        }));
+        toast.success("Added to playlist");
       }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update playlist");
     } finally {
       setBusy(false);
     }
   };
 
-  const handleCreatePlaylist = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // --- CREATE PLAYLIST (now uses onClick) ---
+  const handleCreatePlaylist = async () => {
+    console.log("🔥 Create playlist button clicked!"); // 👈 DEBUG
     const name = newName.trim();
-    if (!name) return;
+    if (!name) {
+      toast.error("Please enter a playlist name");
+      return;
+    }
 
     setBusy(true);
     try {
       const res = await createPlaylist(name);
-      const playlist = res.data.playlist;
+      console.log("✅ Create playlist response:", res.data);
+
+      // Handle both response formats
+      const playlist = res.data.playlist || res.data;
+      if (!playlist._id) {
+        throw new Error("Invalid response: no playlist ID");
+      }
+
       await addVideoToPlaylist(playlist._id, videoId);
+
       setPlaylists((prev) => [playlist, ...prev]);
-      setStatus((s) => ({ ...s, playlistIds: [...s.playlistIds, playlist._id] }));
+      setStatus((s) => ({
+        ...s,
+        playlistIds: [...s.playlistIds, playlist._id],
+      }));
       setNewName("");
       setCreating(false);
+      toast.success(`Playlist "${name}" created and video added!`);
+    } catch (err) {
+      console.error("❌ Create playlist error:", err);
+      toast.error(err.response?.data?.message || "Failed to create playlist.");
     } finally {
       setBusy(false);
     }
@@ -139,7 +174,11 @@ function SaveMenu({ videoId }) {
 
   return (
     <div className={`save-menu${open ? " save-menu--open" : ""}`} ref={wrapRef}>
-      <button className="save-menu__trigger" onClick={handleTriggerClick} aria-label="Save options">
+      <button
+        className="save-menu__trigger"
+        onClick={handleTriggerClick}
+        aria-label="Save options"
+      >
         <MoreIcon />
       </button>
 
@@ -178,7 +217,12 @@ function SaveMenu({ videoId }) {
                           type="checkbox"
                           checked={status.playlistIds.includes(p._id)}
                           disabled={busy}
-                          onChange={() => handleTogglePlaylist(p._id, status.playlistIds.includes(p._id))}
+                          onChange={() =>
+                            handleTogglePlaylist(
+                              p._id,
+                              status.playlistIds.includes(p._id)
+                            )
+                          }
                         />
                         <span className="save-menu__row-label">{p.name}</span>
                       </label>
@@ -190,7 +234,7 @@ function SaveMenu({ videoId }) {
               <div className="save-menu__divider" />
 
               {creating ? (
-                <form className="save-menu__new-form" onSubmit={handleCreatePlaylist}>
+                <div className="save-menu__new-form">
                   <input
                     autoFocus
                     type="text"
@@ -199,10 +243,20 @@ function SaveMenu({ videoId }) {
                     onChange={(e) => setNewName(e.target.value)}
                     maxLength={60}
                   />
-                  <button type="submit" disabled={busy || !newName.trim()}>Create</button>
-                </form>
+                  <button
+                    type="button" // 👈 Not "submit"
+                    disabled={busy || !newName.trim()}
+                    onClick={handleCreatePlaylist} // 👈 Direct click
+                  >
+                    {busy ? "Creating…" : "Create"}
+                  </button>
+                </div>
               ) : (
-                <button type="button" className="save-menu__new-btn" onClick={() => setCreating(true)}>
+                <button
+                  type="button"
+                  className="save-menu__new-btn"
+                  onClick={() => setCreating(true)}
+                >
                   + New playlist
                 </button>
               )}
@@ -214,7 +268,6 @@ function SaveMenu({ videoId }) {
   );
 }
 
-// PropTypes for better type safety
 SaveMenu.propTypes = {
   videoId: PropTypes.string.isRequired,
 };

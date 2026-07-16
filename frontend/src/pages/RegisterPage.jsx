@@ -113,7 +113,7 @@ function RegisterPage() {
         </div>
 
         <h1 className="auth-title">Create account</h1>
-        <p className="auth-subtitle">to continue to YTClone</p>
+        <p className="auth-subtitle">to continue to YouTube</p>
 
         {apiError && <div className="auth-api-error">{apiError}</div>}
 

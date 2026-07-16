@@ -93,7 +93,7 @@ function LoginPage() {
         </div>
 
         <h1 className="auth-title">Sign in</h1>
-        <p className="auth-subtitle">to continue to YTClone</p>
+        <p className="auth-subtitle">to continue to Youtube</p>
 
         {apiError && <div className="auth-api-error">{apiError}</div>}
 

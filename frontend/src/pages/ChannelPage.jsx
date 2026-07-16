@@ -1,7 +1,6 @@
 // client/src/pages/ChannelPage.jsx — FE-07
-// Rubric: Channel Page (40 marks) — create channel, list videos, edit/delete own videos.
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import ChannelHeader from "../components/channel/ChannelHeader.jsx";
 import ChannelVideoList from "../components/channel/ChannelVideoList.jsx";
 import CreateChannelForm from "../components/channel/CreateChannelForm.jsx";
@@ -12,8 +11,13 @@ import toast from "react-hot-toast";
 
 function ChannelPage() {
   const { id } = useParams();
-  const { user, isAuthed, loading: authLoading, refreshUser } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
+  const { user, isAuthed, loading: authLoading, refreshUser } = useAuth();
+
+  const path = location.pathname;
+  const isMe = path === "/channel/me";
+  const isNew = path === "/channel/new";
 
   const [channel, setChannel] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,40 +26,54 @@ function ChannelPage() {
   const [creating, setCreating] = useState(false);
   const [subscribeLoading, setSubscribeLoading] = useState(false);
 
-  const isMe = id === "me";
-  const isNew = id === "new";
-
+  // ── Fetch / redirect ──
   useEffect(() => {
-    // "/channel/me" redirects to user's actual channel or /new
+    let cancelled = false;
+
     if (isMe) {
-      if (authLoading) return; // Wait for auth rehydration
+      if (authLoading) return;
       if (!isAuthed) {
         navigate("/login", { replace: true });
-      } else if (user?.channels?.length) {
-        navigate(`/channel/${user.channels[0]}`, { replace: true });
-      } else {
-        navigate("/channel/new", { replace: true });
+        return;
       }
+      if (user?.channels?.length > 0) {
+        const firstChannelId = user.channels[0];
+        if (firstChannelId) {
+          navigate(`/channel/${firstChannelId}`, { replace: true });
+          return;
+        }
+      }
+      navigate("/channel/new", { replace: true });
       return;
     }
 
-    // "/channel/new" – show create form
     if (isNew) {
       setLoading(false);
       setShowCreateForm(isAuthed);
       return;
     }
 
-    let cancelled = false;
+    if (!id) {
+      setError("Channel ID is missing");
+      setLoading(false);
+      return;
+    }
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      setError("Invalid channel ID");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     getChannelById(id)
       .then((res) => {
-        if (!cancelled) {
-          // ✅ FIX: Backend returns channel directly
-          setChannel(res.data);
-        }
+        if (cancelled) return;
+      
+        // Handle both direct object and wrapped { channel: ... }
+        const channelData = res.data.channel || res.data;
+        setChannel(channelData);
       })
       .catch(() => {
         if (!cancelled) setError("Channel not found.");
@@ -65,26 +83,45 @@ function ChannelPage() {
       });
 
     return () => { cancelled = true; };
-  }, [id, isAuthed, isMe, isNew, authLoading, user, navigate, refreshUser]);
+  }, [id, path, isAuthed, isMe, isNew, authLoading, user, navigate]);
 
-  const isOwner = isAuthed && channel && user?._id === channel.owner?._id;
+  // ── Ownership & subscription ──
+  // Robust: owner can be string ID or populated object
+  const ownerId =
+    typeof channel?.owner === "string"
+      ? channel.owner
+      : channel?.owner?._id || null;
 
-  // Check if user is subscribed to this channel
-  const isSubscribed = isAuthed && channel && (user?.subscribedChannels || []).some(
-    (c) => (typeof c === "string" ? c : c._id) === channel._id
-  );
+  const isOwner =
+    isAuthed &&
+    channel &&
+    user?._id?.toString() === ownerId?.toString();
 
+  // Subscription list may contain string IDs or objects
+  const isSubscribed =
+    isAuthed &&
+    channel &&
+    (user?.subscribedChannels || []).some((c) => {
+      const cId = typeof c === "string" ? c : c?._id;
+      return cId?.toString() === channel._id?.toString();
+    });
+
+  // ── Subscribe toggle ──
   const handleToggleSubscribe = async () => {
     if (!isAuthed) {
       navigate("/login");
       return;
     }
+    if (!channel?._id) {
+      toast.error("Channel data is not ready. Please refresh.");
+     
+      return;
+    }
     setSubscribeLoading(true);
     try {
       const res = await toggleSubscribe(channel._id);
-      // Update local state instantly
       setChannel((prev) => ({ ...prev, subscribers: res.data.subscribers }));
-      await refreshUser(); // Sync user.subscribedChannels
+      await refreshUser();
       toast.success(res.data.subscribed ? "Subscribed!" : "Unsubscribed");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update subscription.");
@@ -93,11 +130,12 @@ function ChannelPage() {
     }
   };
 
+  // ── Create channel ──
   const handleCreateChannel = async (payload) => {
     setCreating(true);
     try {
       const res = await createChannel(payload);
-      await refreshUser(); // Update AuthContext with new channel
+      await refreshUser();
       toast.success("Channel created successfully!");
       navigate(`/channel/${res.data.channel._id}`, { replace: true });
     } catch (err) {
@@ -107,6 +145,7 @@ function ChannelPage() {
     }
   };
 
+  // ── Delete video ──
   const handleDeleteVideo = async (videoId) => {
     if (!window.confirm("Delete this video? This cannot be undone.")) return;
     try {
@@ -121,11 +160,8 @@ function ChannelPage() {
     }
   };
 
-  // ── Render states ──
-
-  if (loading) {
-    return <div className="cp-loading">Loading channel…</div>;
-  }
+  // ── Render ──
+  if (loading) return <div className="cp-loading">Loading channel…</div>;
 
   if (isNew && !isAuthed) {
     return (
@@ -154,14 +190,12 @@ function ChannelPage() {
         channel={channel}
         isOwner={isOwner}
         isSubscribed={isSubscribed}
-        subscribeLoading={subscribeLoading}
+        subscribeLoading={subscribeLoading || !channel._id}
         onToggleSubscribe={handleToggleSubscribe}
       />
-
       <div className="cp-tabs">
         <button className="cp-tab cp-tab--active">Videos</button>
       </div>
-
       <div className="cp-content">
         <ChannelVideoList
           videos={channel.videos || []}

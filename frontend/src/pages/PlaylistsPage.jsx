@@ -59,6 +59,7 @@ function PlaylistsPage() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+     console.log("🔥 Create button clicked");
     const name = newName.trim();
     if (!name) return;
 
@@ -67,7 +68,7 @@ function PlaylistsPage() {
       const res = await createPlaylist(name);
       // ✅ FIX: Backend returns playlist directly
       toast.success("Playlist created!");
-      navigate(`/playlists/${res.data._id}`);
+      navigate(`/playlists/${res.data.playlist._id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to create playlist.");
     } finally {

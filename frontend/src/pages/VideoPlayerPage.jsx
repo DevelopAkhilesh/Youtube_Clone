@@ -109,8 +109,11 @@ function VideoPlayerPage() {
   // Log history
   useEffect(() => {
     if (isAuthed && video?._id) {
-      addHistory(video._id).catch(() => {});
-    }
+    console.log("📝 Adding to history:", video._id); // 👈 ADD THIS
+    addHistory(video._id).catch((err) => {
+      console.error("❌ History error:", err); // 👈 ADD THIS
+    });
+  }
   }, [isAuthed, video?._id]);
 
   // Fetch comments
