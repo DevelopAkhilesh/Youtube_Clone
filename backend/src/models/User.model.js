@@ -1,6 +1,19 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
+// ── Password validator ──────────────────────────────────────
+const validatePassword = (password) => {
+  // At least 6 characters
+  if (password.length < 6) return false;
+  // At least one uppercase letter
+  if (!/[A-Z]/.test(password)) return false;
+  // At least one number
+  if (!/[0-9]/.test(password)) return false;
+  // At least one special character (non‑alphanumeric)
+  if (!/[^a-zA-Z0-9]/.test(password)) return false;
+  return true;
+};
+
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -19,6 +32,11 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+      validate: {
+        validator: validatePassword,
+        message:
+          "Password must be at least 6 characters long, contain one uppercase letter, one number, and one special character.",
+      },
     },
     avatar: {
       type: String,
@@ -61,20 +79,19 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Pre-save hook: hash password only if modified
+// ── Pre‑save hook – hash password only if modified ──
 userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return ;
+  if (!this.isModified("password")) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  ;
 });
 
-// Instance method: compare password
+// ── Instance method – compare plain password with hashed ──
 userSchema.methods.comparePassword = async function (candidate) {
   return await bcrypt.compare(candidate, this.password);
 };
 
-// Transform: remove password from all JSON responses
+// ── Transform – remove password from JSON responses ──
 userSchema.set("toJSON", {
   transform: (doc, ret) => {
     delete ret.password;
