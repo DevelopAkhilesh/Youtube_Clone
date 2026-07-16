@@ -15,7 +15,12 @@ export function validateEmail(email) {
  * @returns {boolean}
  */
 export function validatePassword(password) {
-  return typeof password === "string" && password.length >= 6;
+  if (typeof password !== "string") return false;
+  if (password.length < 6) return false;
+  if (!/[A-Z]/.test(password)) return false;
+  if (!/[0-9]/.test(password)) return false;
+  if (!/[^a-zA-Z0-9]/.test(password)) return false;
+  return true;
 }
 
 /**
