@@ -548,9 +548,10 @@ img { display: block; }
   /* auto-fit (not auto-fill): collapses empty tracks so a small number of
      cards stretch to fill the row instead of getting squeezed into a tiny
      sliver while empty reserved columns eat the rest of the width. */
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 0;
   padding: 0 16px 16px;
+  justify-items: start;
 }
 
 @media (min-width: 1800px) { .video-grid { grid-template-columns: repeat(5, 1fr); } }
@@ -572,6 +573,8 @@ img { display: block; }
   display: block; text-decoration: none; color: inherit;
   padding: 0 8px 16px;
   position: relative;
+  max-width: 320px;           /* Prevents stretching */
+   
 }
 .video-card:hover .video-card__thumb { transform: scale(1.02); }
 
@@ -1732,7 +1735,7 @@ img { display: block; }
 
   /* Video grid: 4 columns on large screens */
   .video-grid {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
 
   /* Player page: side-by-side */
