@@ -59,7 +59,6 @@ function PlaylistsPage() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-     console.log("🔥 Create button clicked");
     const name = newName.trim();
     if (!name) return;
 
